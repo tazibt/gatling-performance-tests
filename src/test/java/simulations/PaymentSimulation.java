@@ -36,7 +36,7 @@ public class PaymentSimulation extends Simulation {
               {"amount": #{amount}, "cardType": "#{card}", "customerId": "#{email}"}"""))
           .check(status().is(200))
           .check(jsonPath("$.status").is("ACCEPTED"))
-          .check(jsonPath("$.transactionId").saveAs("transactionId")));
+          .check(jsonPath("$.transactionId").exists()));
 
   ChainBuilder paiementRefuse = exec(
       http("Paiement carte expirée")
@@ -70,6 +70,7 @@ public class PaymentSimulation extends Simulation {
         .maxDuration(Duration.ofMinutes(30))
         .assertions(
             global().responseTime().percentile(95.0).lt(P95_MAX),
-            global().failedRequests().percent().lt(1.0));
+            global().failedRequests().percent().lt(1.0),
+            details("Paiement carte valide").responseTime().percentile(99.0).lt(P95_MAX));
   }
 }

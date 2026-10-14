@@ -3,6 +3,7 @@ name: Tir de charge
 on:
   push:
     branches: [main]
+    paths-ignore: ['**.md']
   workflow_dispatch:
     inputs:
       rate:
@@ -11,6 +12,9 @@ on:
       duration:
         description: Durée du plateau (s)
         default: '30'
+
+permissions:
+  contents: read
 
 jobs:
   payment:
@@ -34,14 +38,16 @@ jobs:
           cd mock && ./mvnw -B -q package -DskipTests
           java -jar target/mock-payment-sap-*.jar --mock.delay.success=300 --mock.delay.error=300 &
           for i in $(seq 1 30); do curl -sf localhost:8085/payment/health && break; sleep 1; done
+          curl -sf localhost:8085/payment/health || exit 1
 
       - name: Gatling
+        env:
+          RATE: ${{ inputs.rate || '10' }}
+          DURATION: ${{ inputs.duration || '30' }}
         run: >
           mvn -B gatling:test
           -Dgatling.simulationClass=simulations.PaymentSimulation
-          -Drate=${{ inputs.rate || '10' }}
-          -Dduration=${{ inputs.duration || '30' }}
-          -Dramp=10
+          -Drate="$RATE" -Dduration="$DURATION" -Dramp=10
 
       - name: Rapport Gatling
         if: always()

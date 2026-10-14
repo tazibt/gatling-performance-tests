@@ -17,6 +17,7 @@ public class EcommerceSimulation extends Simulation {
   private static final int RAMP = Integer.getInteger("ramp", 20);
   private static final double RATE = Double.parseDouble(System.getProperty("rate", "2"));
   private static final int DURATION = Integer.getInteger("duration", 30);
+  private static final int P95_MAX = Integer.getInteger("p95", 2000);
 
   HttpProtocolBuilder httpProtocol = http
       .baseUrl(BASE_URL)
@@ -29,7 +30,7 @@ public class EcommerceSimulation extends Simulation {
       .exec(http("Session")
           .get("/session")
           .check(status().is(200))
-          .check(jsonPath("$.sessionId").saveAs("sessionId")))
+          .check(jsonPath("$.sessionId").exists()))
       .pause(1, 3)
       .feed(searchFeeder)
       .exec(http("Recherche")
@@ -38,6 +39,7 @@ public class EcommerceSimulation extends Simulation {
           .queryParam("search", "#{searchTerm}")
           .check(status().is(200))
           .check(jsonPath("$.products[*].id").findRandom().saveAs("productId")))
+      .exitHereIfFailed()
       .pause(1, 2)
       .exec(http("Fiche produit")
           .get("/products/#{productId}")
@@ -47,13 +49,12 @@ public class EcommerceSimulation extends Simulation {
   {
     setUp(
         browse.injectOpen(
-            nothingFor(Duration.ofSeconds(2)),
             rampUsers(USERS).during(Duration.ofSeconds(RAMP)),
             constantUsersPerSec(RATE).during(Duration.ofSeconds(DURATION))))
         .protocols(httpProtocol)
         .maxDuration(Duration.ofMinutes(30))
         .assertions(
-            global().responseTime().percentile(95.0).lt(2000),
+            global().responseTime().percentile(95.0).lt(P95_MAX),
             global().successfulRequests().percent().gt(95.0));
   }
 }
