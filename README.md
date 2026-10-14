@@ -44,15 +44,15 @@ Le rapport HTML est généré dans `target/gatling/<simulation>-<date>/index.htm
 Tout se passe en ligne de commande, sans toucher au code : le même script sert pour un tir
 de validation, de charge ou d'endurance.
 
-| Paramètre | Défaut | Rôle |
-|---|---|---|
-| `baseUrl` | selon la simulation | URL cible |
-| `model` | `open` | `open` = débit d'arrivée, `closed` = utilisateurs simultanés (`PaymentSimulation`) |
-| `rate` | `20` | Utilisateurs arrivant par seconde (modèle ouvert) |
-| `users` | `20` | Utilisateurs simultanés (modèle fermé) |
-| `ramp` | `30` | Durée de montée en charge (s) |
-| `duration` | `60` | Durée du plateau (s) |
-| `p95` | `1000` | Seuil du 95e percentile (ms) pour l'assertion |
+| Paramètre | `EcommerceSimulation` | `PaymentSimulation` | Rôle |
+|---|---|---|---|
+| `baseUrl` | `https://api-ecomm.gatling.io` | `http://localhost:8085` | URL cible |
+| `model` | – | `open` | `open` = débit d'arrivée, `closed` = utilisateurs simultanés |
+| `users` | `10` | `20` | Ecommerce : nombre d'utilisateurs injectés pendant la montée. Payment (fermé) : utilisateurs simultanés |
+| `ramp` | `20` | `30` | Durée de montée en charge (s) |
+| `rate` | `2` | `20` | Utilisateurs arrivant par seconde sur le plateau (modèle ouvert) |
+| `duration` | `30` | `60` | Durée du plateau (s) |
+| `p95` | `2000` | `1000` | Seuil en ms : p95 global, et p99 du paiement valide pour `PaymentSimulation` |
 
 ## Modèle ouvert ou fermé ?
 
@@ -62,19 +62,21 @@ de validation, de charge ou d'endurance.
   celui qui termine. Adapté à une population connue (application interne, call center),
   c'est l'équivalent du Thread Group JMeter.
 
-Les deux sont reliés par la loi de Little : **concurrence = débit × temps de réponse**.
+Les deux sont reliés par la loi de Little : **N = X × (R + Z)**, avec N la concurrence, X le débit,
+R le temps de réponse et Z le temps de réflexion entre deux requêtes (ici Z = 0, pas de pause).
 
 ## Résultats (poste local, mock à 300 ms de latence)
 
 | Tir | Requêtes | KO | p50 | p95 | p99 | Débit moyen |
 |---|---|---|---|---|---|---|
-| Ouvert, 50 paiements/s, 60 s de plateau | 3 510 | 0 | 312 ms | 319 ms | 329 ms | 43 req/s |
-| Fermé, 50 utilisateurs simultanés, 60 s | 11 178 | 0 | 312 ms | 325 ms | 342 ms | 138 req/s |
+| Ouvert : `-Drate=50 -Dduration=60` (montée 30 s) | 3 765 | 0 | 312 ms | 318 ms | 328 ms | 41 req/s |
+| Fermé : `-Dmodel=closed -Dusers=50 -Dduration=60` (montée 30 s) | 11 998 | 0 | 311 ms | 323 ms | 338 ms | 132 req/s |
 
 Lecture :
 - En modèle ouvert, 50 arrivées/s × 0,31 s ≈ **16 paiements en cours** en même temps.
+  Le débit moyen (41 req/s) est inférieur à 50 car il inclut les 30 s de montée de 1 à 50/s.
 - En modèle fermé, 50 utilisateurs qui enchaînent des requêtes de 0,31 s donnent au maximum
-  50 / 0,31 ≈ **160 req/s** sur le plateau ; la moyenne de 138 req/s inclut la montée en charge.
+  50 / 0,31 ≈ **160 req/s** sur le plateau ; la moyenne de 132 req/s inclut la montée en charge.
 - Le temps de réponse reste collé à la latence simulée (300 ms) : le mock n'est pas le goulot,
   ce qui est le but quand il remplace un prestataire externe dans un tir.
 
