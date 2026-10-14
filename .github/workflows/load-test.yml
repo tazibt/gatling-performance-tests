@@ -1,0 +1,51 @@
+name: Tir de charge
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      rate:
+        description: Paiements par seconde
+        default: '10'
+      duration:
+        description: Durée du plateau (s)
+        default: '30'
+
+jobs:
+  payment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: tazibt/mock-payment-sap
+          path: mock
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Démarrage du mock
+        run: |
+          cd mock && ./mvnw -B -q package -DskipTests
+          java -jar target/mock-payment-sap-*.jar --mock.delay.success=300 --mock.delay.error=300 &
+          for i in $(seq 1 30); do curl -sf localhost:8085/payment/health && break; sleep 1; done
+
+      - name: Gatling
+        run: >
+          mvn -B gatling:test
+          -Dgatling.simulationClass=simulations.PaymentSimulation
+          -Drate=${{ inputs.rate || '10' }}
+          -Dduration=${{ inputs.duration || '30' }}
+          -Dramp=10
+
+      - name: Rapport Gatling
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-gatling
+          path: target/gatling/
