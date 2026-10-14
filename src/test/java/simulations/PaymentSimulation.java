@@ -8,7 +8,7 @@ import io.gatling.javaapi.http.*;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 
-// Tir de charge sur mock-payment-sap (https://github.com/tazibt/mock-payment-sap)
+// Tir de charge sur mock-payment-api (https://github.com/tazibt/mock-payment-api)
 public class PaymentSimulation extends Simulation {
 
   private static final String BASE_URL = System.getProperty("baseUrl", "http://localhost:8085");

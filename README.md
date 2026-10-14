@@ -13,7 +13,7 @@ et exécution en CI.
 | Simulation | Cible | Ce qu'elle montre |
 |---|---|---|
 | `EcommerceSimulation` | API de démo Gatling (`api-ecomm.gatling.io`) | Parcours session → recherche → fiche produit, **corrélation** (`productId` extrait de la recherche et réutilisé), feeder CSV |
-| `PaymentSimulation` | [mock-payment-sap](https://github.com/tazibt/mock-payment-sap) en local | Modèles **ouvert / fermé**, données générées par [Generateur-Data](https://github.com/tazibt/Generateur-Data), mix de cas (95 % accepté / 5 % refusé), checks JSON |
+| `PaymentSimulation` | [mock-payment-api](https://github.com/tazibt/mock-payment-api) en local | Modèles **ouvert / fermé**, données générées par [Generateur-Data](https://github.com/tazibt/Generateur-Data), mix de cas (95 % accepté / 5 % refusé), checks JSON |
 
 ```
 src/test/java/simulations/
@@ -33,7 +33,7 @@ mvn gatling:test -Dgatling.simulationClass=simulations.EcommerceSimulation
 Pour `PaymentSimulation`, démarrer d'abord le mock avec une latence réaliste :
 
 ```bash
-java -jar mock-payment-sap-1.0.0.jar --mock.delay.success=300 --mock.delay.error=300
+java -jar mock-payment-api-1.0.0.jar --mock.delay.success=300 --mock.delay.error=300
 mvn gatling:test -Dgatling.simulationClass=simulations.PaymentSimulation -Drate=50 -Dduration=60
 ```
 

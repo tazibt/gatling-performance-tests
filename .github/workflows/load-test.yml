@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          repository: tazibt/mock-payment-sap
+          repository: tazibt/mock-payment-api
           path: mock
 
       - uses: actions/setup-java@v4
@@ -36,7 +36,7 @@ jobs:
       - name: Démarrage du mock
         run: |
           cd mock && ./mvnw -B -q package -DskipTests
-          java -jar target/mock-payment-sap-*.jar --mock.delay.success=300 --mock.delay.error=300 &
+          java -jar target/mock-payment-api-*.jar --mock.delay.success=300 --mock.delay.error=300 &
           for i in $(seq 1 30); do curl -sf localhost:8085/payment/health && break; sleep 1; done
           curl -sf localhost:8085/payment/health || exit 1
 
